@@ -1,610 +1,179 @@
 <!DOCTYPE html>
+<!--
+  [메타데이터 및 검증자료 위치]
+  - 파일 버전: v1.0 (더치페이_v1.html - 미션2 두 AI 비교 후 선택한 초기 버전)
+  - 기획서 버전 및 위치: ./기획서.md (v4.0)
+  - 검증자료 위치: ./제작검증기록.md (두 AI 비교, 테스트 3건, 버전별 변경 전후 테스트 로그, 수정 기록 1~3, 원본 사용자 피드백 녹취 수록)
+  - [v1.0 테스트 로그]:
+    1) 기본 예시(68,000원÷4명=17,000원) 및 50,000원÷3명 계산 -> 1인당 16,666원, 남는 자투리 2원 (통과)
+    2) 4명 사다리 1~4번 개별 클릭 vs 전체 결과 보기 -> 1:1 매칭 중복 0건, 당첨 번호 일치 (통과)
+    3) 조건 변경 테스트(360px 10명 사다리 / 0원 입력) -> 360px에서 10명 사다리 가로 넘침(scrollWidth 494px > clientWidth 312px) 및 0원 입력 시 0원 계산 발견 -> v2.0, v3.0에서 순차 수정
+-->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>더치페이 정산 &amp; 내기 사다리</title>
+  <meta name="version" content="v1.0 (더치페이_v1.html)">
+  <meta name="spec-version" content="기획서.md v4.0 (./기획서.md)">
+  <meta name="verification-record" content="./제작검증기록.md">
+  <title>더치페이 정산 &amp; 내기 사다리 (v1.0)</title>
   <style>
-    :root {
-      --bg-color: #FFFDF7;
-      --card-bg: #FFFFFF;
-      --primary-coral: #FF6B6B;
-      --primary-yellow: #FFD166;
-      --primary-mint: #06D6A0;
-      --primary-blue: #118AB2;
-      --text-dark: #2B2D42;
-      --text-muted: #6C757D;
-      --border-color: #E9ECEF;
-      --shadow: 0 8px 24px rgba(43, 45, 66, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
-      background: linear-gradient(180deg, #FFF9E6 0%, #FFFDF7 100%);
-      color: var(--text-dark);
-      line-height: 1.5;
-      min-height: 100vh;
-      padding: 24px 16px 48px;
-    }
-
-    .container {
-      max-width: 680px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    header {
-      text-align: center;
-      padding: 16px 12px;
-      background: var(--card-bg);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      border: 2px solid var(--primary-yellow);
-    }
-
-    header h1 {
-      font-size: 1.65rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-bottom: 6px;
-      word-break: keep-all;
-    }
-
-    header p {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      word-break: keep-all;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 22px;
-      padding: 24px 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border-color);
-      position: relative;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 18px;
-      padding-bottom: 12px;
-      border-bottom: 2px dashed var(--border-color);
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .badge {
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #FFF3BF;
-      color: #D97706;
-    }
-
-    .form-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .form-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-row label {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    input[type="text"],
-    input[type="number"] {
-      width: 100%;
-      padding: 11px 14px;
-      font-size: 1rem;
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
-
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      border-color: var(--primary-coral);
-    }
-
-    .quick-btns {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-      flex-wrap: wrap;
-    }
-
-    .btn-chip {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      border-radius: 999px;
-      border: 1px solid #FFD8A8;
-      background: #FFF4E6;
-      color: #E8590C;
-      cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
-    }
-
-    .btn-chip:hover {
-      background: #FFE8CC;
-    }
-
-    .btn-chip:active {
-      transform: scale(0.96);
-    }
-
-    .btn-chip.reset {
-      background: #F1F3F5;
-      border-color: #DEE2E6;
-      color: #495057;
-    }
-
-    .stepper-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-step {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      border: 2px solid var(--border-color);
-      background: #F8F9FA;
-      font-size: 1.2rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-dark);
-      flex-shrink: 0;
-    }
-
-    .btn-step:hover {
-      border-color: var(--primary-coral);
-      color: var(--primary-coral);
-    }
-
-    .account-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.6fr 1fr;
-      gap: 8px;
-    }
-
-    @media (max-width: 520px) {
-      .account-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .error-msg {
-      display: none;
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #FFF5F5;
-      border: 1.5px solid #FFA8A8;
-      color: #C92A2A;
-      font-weight: 700;
-      font-size: 0.92rem;
-    }
-
-    .error-msg.show {
-      display: block;
-      animation: shake 0.35s ease-in-out;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-6px); }
-      50% { transform: translateX(6px); }
-      75% { transform: translateX(-4px); }
-    }
-
-    .result-box {
-      margin-top: 18px;
-      padding: 18px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #FFF9DB 0%, #FFF3BF 100%);
-      border: 2px solid var(--primary-yellow);
-      text-align: center;
-    }
-
-    .result-main {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      transition: transform 0.2s ease;
-    }
-
-    .result-main.pop {
-      transform: scale(1.06);
-    }
-
-    .result-main .highlight {
-      color: #E03131;
-      font-size: 1.65rem;
-    }
-
-    .result-sub {
-      margin-top: 4px;
-      font-size: 0.95rem;
-      color: #5C5F66;
-      font-weight: 600;
-    }
-
-    .speech-bubble {
-      position: relative;
-      margin-top: 18px;
-      background: #F8F9FA;
-      border: 2px solid #DEE2E6;
-      border-radius: 16px;
-      padding: 16px;
-      font-size: 0.92rem;
-      white-space: pre-line;
-      color: var(--text-dark);
-    }
-
-    .speech-bubble::before {
-      content: "💬 공유 문구 미리보기";
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: var(--primary-blue);
-      margin-bottom: 6px;
-    }
-
-    .btn-primary {
-      width: 100%;
-      margin-top: 14px;
-      padding: 14px 18px;
-      font-size: 1.02rem;
-      font-weight: 800;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      background: var(--primary-coral);
-      color: #FFFFFF;
-      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-      transition: background 0.2s, transform 0.1s;
-    }
-
-    .btn-primary:hover {
-      background: #FA5252;
-    }
-
-    .btn-primary:active {
-      transform: scale(0.99);
-    }
-
-    .btn-primary.copied {
-      background: var(--primary-mint);
-      color: #073B4C;
-      box-shadow: 0 4px 12px rgba(6, 214, 160, 0.3);
-    }
-
-    .copy-guide {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #099268;
-      font-weight: 700;
-      text-align: center;
-      min-height: 1.3em;
-    }
-
-    /* 사다리 영역 */
-    .ladder-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .ladder-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      width: 100%;
-    }
-
-    .btn-action {
-      flex: 1;
-      padding: 12px 14px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
-    }
-
-    .btn-action.generate {
-      background: var(--primary-blue);
-      color: #FFFFFF;
-    }
-
-    .btn-action.reveal-all {
-      background: var(--primary-yellow);
-      color: #2B2D42;
-    }
-
-    .ladder-hint {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 12px;
-    }
-
-    .ladder-stage {
-      background: #F8F9FA;
-      border: 2px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px 12px;
-      position: relative;
-      overflow-x: auto;
-    }
-
-    .ladder-row {
-      display: flex;
-      justify-content: space-around;
-      gap: 6px;
-    }
-
-    .start-btn {
-      min-width: 44px;
-      padding: 7px 6px;
-      border-radius: 10px;
-      border: 2px solid #CED4DA;
-      background: #FFFFFF;
-      font-size: 0.88rem;
-      font-weight: 800;
-      cursor: pointer;
-      color: var(--text-dark);
-      transition: all 0.15s;
-    }
-
-    .start-btn:hover,
-    .start-btn.active {
-      border-color: var(--primary-coral);
-      background: #FFF0F0;
-      color: #E03131;
-      transform: translateY(-2px);
-    }
-
-    .canvas-wrap {
-      width: 100%;
-      height: 240px;
-      position: relative;
-      margin: 8px 0;
-    }
-
-    #ladderSvg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .end-slot {
-      min-width: 44px;
-      padding: 6px 4px;
-      border-radius: 10px;
-      font-size: 0.82rem;
-      font-weight: 800;
-      text-align: center;
-      background: #E9ECEF;
-      color: #495057;
-      border: 2px solid transparent;
-    }
-
-    .end-slot.win {
-      background: #FFE3E3;
-      color: #C92A2A;
-      border-color: #FF6B6B;
-    }
-
-    .end-slot.pass {
-      background: #E6FCF5;
-      color: #087F5B;
-      border-color: #63E6BE;
-    }
-
-    .winner-banner {
-      display: none;
-      margin-top: 16px;
-      padding: 16px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-      color: #FFFFFF;
-      text-align: center;
-      font-size: 1.25rem;
-      font-weight: 800;
-      box-shadow: 0 6px 18px rgba(255, 107, 107, 0.35);
-    }
-
-    .winner-banner.show {
-      display: block;
-      animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes bounceIn {
-      0% { transform: scale(0.7); opacity: 0; }
-      60% { transform: scale(1.06); opacity: 1; }
-      100% { transform: scale(1); }
-    }
-
-    #confettiCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
+    :root { --bg-color:#FFFDF7; --card-bg:#FFFFFF; --primary-coral:#FF6B6B; --primary-yellow:#FFD166; --primary-mint:#06D6A0; --primary-blue:#118AB2; --text-dark:#2B2D42; --text-muted:#6C757D; --border-color:#E9ECEF; --shadow:0 8px 24px rgba(43,45,66,0.08); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",system-ui,sans-serif; background:linear-gradient(180deg,#FFF9E6 0%,#FFFDF7 100%); color:var(--text-dark); line-height:1.5; min-height:100vh; padding:24px 16px 48px; }
+    .container { max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
+    header { text-align:center; padding:16px 12px; background:var(--card-bg); border-radius:20px; box-shadow:var(--shadow); border:2px solid var(--primary-yellow); }
+    header h1 { font-size:1.65rem; font-weight:800; color:var(--text-dark); margin-bottom:6px; word-break:keep-all; }
+    header p { font-size:0.95rem; color:var(--text-muted); word-break:keep-all; }
+    .meta-bar { margin-top:8px; font-size:0.78rem; color:#495057; background:#F8F9FA; display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid var(--border-color); }
+    .meta-bar a { color:var(--primary-blue); font-weight:700; text-decoration:underline; }
+    .card { background:var(--card-bg); border-radius:22px; padding:24px 20px; box-shadow:var(--shadow); border:1px solid var(--border-color); position:relative; }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-bottom:12px; border-bottom:2px dashed var(--border-color); }
+    .card-title { font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:8px; }
+    .badge { font-size:0.78rem; font-weight:700; padding:4px 10px; border-radius:999px; background:#FFF3BF; color:#D97706; }
+    .form-grid { display:flex; flex-direction:column; gap:14px; }
+    .form-row { display:flex; flex-direction:column; gap:6px; }
+    .form-row label { font-size:0.9rem; font-weight:700; color:var(--text-dark); }
+    input[type="text"], input[type="number"] { width:100%; padding:11px 14px; font-size:1rem; border:2px solid var(--border-color); border-radius:12px; outline:none; transition:border-color 0.2s; font-family:inherit; }
+    input[type="text"]:focus, input[type="number"]:focus { border-color:var(--primary-coral); }
+    .quick-btns { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+    .btn-chip { padding:6px 12px; font-size:0.85rem; font-weight:700; border-radius:999px; border:1px solid #FFD8A8; background:#FFF4E6; color:#E8590C; cursor:pointer; }
+    .btn-chip:hover { background:#FFE8CC; }
+    .btn-chip.reset { background:#F1F3F5; border-color:#DEE2E6; color:#495057; }
+    .stepper-wrap { display:flex; align-items:center; gap:8px; }
+    .btn-step { width:42px; height:42px; border-radius:12px; border:2px solid var(--border-color); background:#F8F9FA; font-size:1.2rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-dark); flex-shrink:0; }
+    .account-grid { display:grid; grid-template-columns:1fr 1.6fr 1fr; gap:8px; }
+    @media (max-width:520px) { .account-grid { grid-template-columns:1fr; } }
+    .error-msg { display:none; margin-top:12px; padding:12px 14px; border-radius:12px; background:#FFF5F5; border:1.5px solid #FFA8A8; color:#C92A2A; font-weight:700; font-size:0.92rem; }
+    .error-msg.show { display:block; animation:shake 0.35s ease-in-out; }
+    @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 50%{transform:translateX(6px);} 75%{transform:translateX(-4px);} }
+    .result-box { margin-top:18px; padding:18px; border-radius:16px; background:linear-gradient(135deg,#FFF9DB 0%,#FFF3BF 100%); border:2px solid var(--primary-yellow); text-align:center; }
+    .result-main { font-size:1.4rem; font-weight:800; color:var(--text-dark); transition:transform 0.2s ease; }
+    .result-main.pop { transform:scale(1.06); }
+    .result-main .highlight { color:#E03131; font-size:1.65rem; }
+    .result-sub { margin-top:4px; font-size:0.95rem; color:#5C5F66; font-weight:600; }
+    .speech-bubble { position:relative; margin-top:18px; background:#F8F9FA; border:2px solid #DEE2E6; border-radius:16px; padding:16px; font-size:0.92rem; white-space:pre-line; color:var(--text-dark); }
+    .speech-bubble::before { content:"💬 공유 문구 미리보기"; display:block; font-size:0.8rem; font-weight:800; color:var(--primary-blue); margin-bottom:6px; }
+    .btn-primary { width:100%; margin-top:14px; padding:14px 18px; font-size:1.02rem; font-weight:800; border:none; border-radius:14px; cursor:pointer; background:var(--primary-coral); color:#FFFFFF; box-shadow:0 4px 12px rgba(255,107,107,0.3); }
+    .btn-primary.copied { background:var(--primary-mint); color:#073B4C; }
+    .copy-guide { margin-top:8px; font-size:0.85rem; color:#099268; font-weight:700; text-align:center; min-height:1.3em; }
+    .ladder-controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .ladder-actions { display:flex; gap:8px; flex-wrap:wrap; width:100%; }
+    .btn-action { flex:1; padding:12px 14px; font-size:0.95rem; font-weight:800; border-radius:12px; border:none; cursor:pointer; }
+    .btn-action.generate { background:var(--primary-blue); color:#FFFFFF; }
+    .btn-action.reveal-all { background:var(--primary-yellow); color:#2B2D42; }
+    .ladder-hint { font-size:0.88rem; color:var(--text-muted); text-align:center; margin-bottom:12px; }
+    /* v1.0 초기 상태: min-width: 44px 고정으로 인해 360px 10명일 때 가로 스크롤 발생 (수정 기록 1 대상) */
+    .ladder-stage { background:#F8F9FA; border:2px solid var(--border-color); border-radius:16px; padding:16px 12px; position:relative; overflow-x:auto; }
+    .ladder-row { display:flex; justify-content:space-around; gap:6px; }
+    .start-btn { min-width:44px; padding:7px 6px; border-radius:10px; border:2px solid #CED4DA; background:#FFFFFF; font-size:0.88rem; font-weight:800; cursor:pointer; color:var(--text-dark); }
+    .start-btn:hover, .start-btn.active { border-color:var(--primary-coral); background:#FFF0F0; color:#E03131; }
+    .canvas-wrap { width:100%; height:240px; position:relative; margin:8px 0; }
+    #ladderSvg { width:100%; height:100%; display:block; }
+    .end-slot { min-width:44px; padding:6px 4px; border-radius:10px; font-size:0.82rem; font-weight:800; text-align:center; background:#E9ECEF; color:#495057; border:2px solid transparent; }
+    .end-slot.win { background:#FFE3E3; color:#C92A2A; border-color:#FF6B6B; }
+    .end-slot.pass { background:#E6FCF5; color:#087F5B; border-color:#63E6BE; }
+    .winner-banner { display:none; margin-top:16px; padding:16px; border-radius:16px; background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%); color:#FFFFFF; text-align:center; font-size:1.25rem; font-weight:800; }
+    .winner-banner.show { display:block; }
+    #confettiCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+    footer { text-align:center; font-size:0.82rem; color:var(--text-muted); margin-top:8px; }
   </style>
 </head>
 <body>
   <canvas id="confettiCanvas"></canvas>
-
   <div class="container">
     <header>
       <h1>💸 더치페이 정산 &amp; 내기 사다리 🎯</h1>
       <p>모임 정산 금액과 계좌번호를 한 번에 복사하고, 운명의 사다리로 오늘의 당첨자를 뽑아보세요!</p>
+      <div class="meta-bar">버전: <strong>v1.0 (초기 선택본)</strong> · 기획서: <a href="./기획서.md">기획서.md (v4.0)</a> · 검증기록: <a href="./제작검증기록.md">제작검증기록.md</a></div>
     </header>
 
-    <!-- 위쪽: 1/N 똑같이 나누기 계산기 영역 -->
     <section class="card" aria-label="1/N 똑같이 나누기 계산기">
       <div class="card-header">
         <h2 class="card-title">🧮 1/N 똑같이 나누기 계산기</h2>
-        <span class="badge">원 단위 내림</span>
+        <span class="badge">원 단위 내림 · v1.0</span>
       </div>
-
       <div class="form-grid">
         <div class="form-row">
           <label for="meetingName">모임 이름</label>
-          <input type="text" id="meetingName" value="금요일 저녁 모임 🍕" placeholder="예: 금요일 저녁 모임">
+          <input type="text" id="meetingName" value="금요일 저녁 모임 🍕">
         </div>
-
         <div class="form-row">
           <label for="totalAmount">총금액 (원)</label>
-          <input type="number" id="totalAmount" value="68000" placeholder="예: 68000">
+          <input type="number" id="totalAmount" value="68000">
           <div class="quick-btns">
             <button type="button" class="btn-chip" data-add="10000">+10,000원</button>
             <button type="button" class="btn-chip" data-add="50000">+50,000원</button>
             <button type="button" class="btn-chip reset" id="btnResetAmount">초기화</button>
           </div>
         </div>
-
         <div class="form-row">
           <label for="memberCount">참여 인원수 (2~10명)</label>
           <div class="stepper-wrap">
-            <button type="button" class="btn-step" id="btnMemberMinus" aria-label="인원 감소">-</button>
+            <button type="button" class="btn-step" id="btnMemberMinus">-</button>
             <input type="number" id="memberCount" value="4" min="2" max="10">
-            <button type="button" class="btn-step" id="btnMemberPlus" aria-label="인원 증가">+</button>
+            <button type="button" class="btn-step" id="btnMemberPlus">+</button>
           </div>
         </div>
-
         <div class="form-row">
           <label>입금받을 계좌 정보 (은행명 · 계좌번호 · 예금주)</label>
           <div class="account-grid">
-            <input type="text" id="bankName" value="국민은행" placeholder="은행명" aria-label="은행명">
-            <input type="text" id="accountNumber" value="123456-04-789012" placeholder="계좌번호" aria-label="계좌번호">
-            <input type="text" id="accountHolder" value="홍길동(가상 예시)" placeholder="예금주" aria-label="예금주">
+            <input type="text" id="bankName" value="국민은행">
+            <input type="text" id="accountNumber" value="123456-04-789012">
+            <input type="text" id="accountHolder" value="홍길동(가상 예시)">
           </div>
         </div>
       </div>
-
       <div id="calcError" class="error-msg" role="alert"></div>
-
       <div id="calcResultBox" class="result-box">
-        <div id="resultMain" class="result-main">
-          1인당 금액 <span id="perPersonText" class="highlight">17,000원</span>
-        </div>
-        <div id="resultSub" class="result-sub">
-          남는 자투리 금액 <strong id="remainderText">0원</strong>
-        </div>
+        <div id="resultMain" class="result-main">1인당 금액 <span id="perPersonText" class="highlight">17,000원</span></div>
+        <div id="resultSub" class="result-sub">남는 자투리 금액 <strong id="remainderText">0원</strong></div>
       </div>
-
       <div id="previewText" class="speech-bubble"></div>
-
       <button type="button" id="btnCopy" class="btn-primary">📋 정산 내용 + 계좌번호 복사하기</button>
       <div id="copyNotice" class="copy-guide" aria-live="polite"></div>
     </section>
 
-    <!-- 아래쪽: 운명의 내기 사다리 타기 영역 -->
     <section class="card" aria-label="운명의 내기 사다리 타기">
       <div class="card-header">
         <h2 class="card-title">🪜 운명의 내기 사다리 타기</h2>
         <span class="badge">당첨자 1명 뽑기</span>
       </div>
-
       <div class="ladder-controls">
-        <div class="form-row" style="width: 100%;">
+        <div class="form-row" style="width:100%;">
           <label for="ladderCount">사다리 참여 인원수 (2~10명)</label>
           <div class="stepper-wrap">
-            <button type="button" class="btn-step" id="btnLadderMinus" aria-label="사다리 인원 감소">-</button>
+            <button type="button" class="btn-step" id="btnLadderMinus">-</button>
             <input type="number" id="ladderCount" value="4" min="2" max="10">
-            <button type="button" class="btn-step" id="btnLadderPlus" aria-label="사다리 인원 증가">+</button>
+            <button type="button" class="btn-step" id="btnLadderPlus">+</button>
           </div>
         </div>
-
         <div class="ladder-actions">
           <button type="button" class="btn-action generate" id="btnNewLadder">🎲 새 사다리 만들기</button>
           <button type="button" class="btn-action reveal-all" id="btnRevealAll">⚡ 전체 결과 한 번에 보기</button>
         </div>
       </div>
-
       <div id="ladderError" class="error-msg" role="alert"></div>
-
       <p class="ladder-hint">👆 위쪽 출발 번호(1번~N번)를 눌러 사다리 경로를 따라가 보세요!</p>
-
       <div id="ladderStage" class="ladder-stage">
         <div id="startRow" class="ladder-row"></div>
-        <div class="canvas-wrap">
-          <svg id="ladderSvg" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
-        </div>
+        <div class="canvas-wrap"><svg id="ladderSvg" viewBox="0 0 600 240" preserveAspectRatio="none"></svg></div>
         <div id="endRow" class="ladder-row"></div>
       </div>
-
       <div id="winnerBanner" class="winner-banner" role="status"></div>
     </section>
 
-    <footer>
-      ※ 기본 입력된 계좌 정보(국민은행 123456-04-789012 홍길동)는 테스트용 가상 예시입니다. 입력한 정보는 저장되지 않습니다.
-    </footer>
+    <footer>※ 기본 입력된 계좌 정보(국민은행 123456-04-789012 홍길동)는 테스트용 가상 예시입니다. | 버전: v1.0 | 검증자료: <a href="./제작검증기록.md">제작검증기록.md</a></footer>
   </div>
 
   <script>
-    const PATH_COLORS = [
-      '#FF6B6B', '#118AB2', '#06D6A0', '#F77F00', '#8338EC',
-      '#E63946', '#2A9D8F', '#FB8500', '#3A86FF', '#D62828'
-    ];
-
+    const PATH_COLORS = ['#FF6B6B','#118AB2','#06D6A0','#F77F00','#8338EC','#E63946','#2A9D8F','#FB8500','#3A86FF','#D62828'];
     const meetingNameInput = document.getElementById('meetingName');
     const totalAmountInput = document.getElementById('totalAmount');
     const memberCountInput = document.getElementById('memberCount');
     const bankNameInput = document.getElementById('bankName');
     const accountNumberInput = document.getElementById('accountNumber');
     const accountHolderInput = document.getElementById('accountHolder');
-
     const calcError = document.getElementById('calcError');
     const calcResultBox = document.getElementById('calcResultBox');
     const resultMain = document.getElementById('resultMain');
@@ -613,7 +182,6 @@
     const previewText = document.getElementById('previewText');
     const btnCopy = document.getElementById('btnCopy');
     const copyNotice = document.getElementById('copyNotice');
-
     const ladderCountInput = document.getElementById('ladderCount');
     const ladderError = document.getElementById('ladderError');
     const ladderStage = document.getElementById('ladderStage');
@@ -621,111 +189,54 @@
     const endRow = document.getElementById('endRow');
     const ladderSvg = document.getElementById('ladderSvg');
     const winnerBanner = document.getElementById('winnerBanner');
-
-    let ladderState = {
-      count: 4,
-      rungs: [],
-      winnerCol: 0,
-      routes: [],
-      revealedStarts: new Set()
-    };
-
-    function formatNumber(num) {
-      return num.toLocaleString('ko-KR');
-    }
+    let ladderState = { count:4, rungs:[], winnerCol:0, routes:[], revealedStarts:new Set() };
+    const formatNumber = num => num.toLocaleString('ko-KR');
 
     function updateCalculation() {
       const rawAmount = totalAmountInput.value.trim();
       const rawMembers = memberCountInput.value.trim();
       const amount = Number(rawAmount);
       const members = Number(rawMembers);
-
       if (rawMembers === '' || !Number.isInteger(members) || members < 2 || members > 10) {
         calcError.textContent = '인원수는 2명에서 10명 사이로 설정해 주세요!';
-        calcError.classList.add('show');
-        calcResultBox.style.display = 'none';
-        previewText.style.display = 'none';
-        return;
+        calcError.classList.add('show'); calcResultBox.style.display = 'none'; previewText.style.display = 'none'; return;
       }
-
-      // v1: 0원/빈칸 입력 시 Number("") === 0 이 되어 < 0 조건만으로는 걸러지지 않는 지점
+      // v1.0 초기 상태: amount < 0 조건만 검사하여 0원/빈칸 입력 시 0원으로 계산됨 (수정 기록 2에서 해결)
       if (isNaN(amount) || amount < 0) {
         calcError.textContent = '총금액을 1원 이상 입력해 주세요!';
-        calcError.classList.add('show');
-        calcResultBox.style.display = 'none';
-        previewText.style.display = 'none';
-        return;
+        calcError.classList.add('show'); calcResultBox.style.display = 'none'; previewText.style.display = 'none'; return;
       }
-
-      calcError.classList.remove('show');
-      calcResultBox.style.display = 'block';
-      previewText.style.display = 'block';
-
+      calcError.classList.remove('show'); calcResultBox.style.display = 'block'; previewText.style.display = 'block';
       const perPerson = Math.floor(amount / members);
       const remainder = amount % members;
-
       perPersonText.textContent = `${formatNumber(perPerson)}원`;
       remainderText.textContent = `${formatNumber(remainder)}원`;
-
-      resultMain.classList.remove('pop');
-      void resultMain.offsetWidth;
-      resultMain.classList.add('pop');
-
       const meeting = meetingNameInput.value.trim() || '모임 정산';
       const bank = bankNameInput.value.trim() || '-';
       const accNo = accountNumberInput.value.trim() || '-';
       const holder = accountHolderInput.value.trim() || '-';
-
       const remainderLine = remainder > 0 ? `\n• 남는 자투리: ${formatNumber(remainder)}원` : '';
-      previewText.textContent =
-        `[${meeting} 정산 안내]\n` +
-        `• 총금액: ${formatNumber(amount)}원 (${members}명)\n` +
-        `• 1인당 입금 금액: ${formatNumber(perPerson)}원${remainderLine}\n` +
-        `• 입금 계좌: ${bank} ${accNo} (예금주: ${holder})`;
+      previewText.textContent = `[${meeting} 정산 안내]\n• 총금액: ${formatNumber(amount)}원 (${members}명)\n• 1인당 입금 금액: ${formatNumber(perPerson)}원${remainderLine}\n• 입금 계좌: ${bank} ${accNo} (예금주: ${holder})`;
     }
 
-    document.querySelectorAll('.btn-chip[data-add]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const addVal = Number(btn.getAttribute('data-add'));
-        const cur = Number(totalAmountInput.value) || 0;
-        totalAmountInput.value = cur + addVal;
-        updateCalculation();
-      });
-    });
-
-    document.getElementById('btnResetAmount').addEventListener('click', () => {
-      totalAmountInput.value = 0;
+    document.querySelectorAll('.btn-chip[data-add]').forEach(btn => btn.addEventListener('click', () => {
+      totalAmountInput.value = (Number(totalAmountInput.value) || 0) + Number(btn.getAttribute('data-add'));
       updateCalculation();
-    });
-
+    }));
+    document.getElementById('btnResetAmount').addEventListener('click', () => { totalAmountInput.value = 0; updateCalculation(); });
     document.getElementById('btnMemberMinus').addEventListener('click', () => {
       const cur = Number(memberCountInput.value) || 2;
-      if (cur > 2) {
-        memberCountInput.value = cur - 1;
-        ladderCountInput.value = cur - 1;
-        updateCalculation();
-        generateLadder();
-      }
+      if (cur > 2) { memberCountInput.value = cur - 1; ladderCountInput.value = cur - 1; updateCalculation(); generateLadder(); }
     });
-
     document.getElementById('btnMemberPlus').addEventListener('click', () => {
       const cur = Number(memberCountInput.value) || 2;
-      if (cur < 10) {
-        memberCountInput.value = cur + 1;
-        ladderCountInput.value = cur + 1;
-        updateCalculation();
-        generateLadder();
-      }
+      if (cur < 10) { memberCountInput.value = cur + 1; ladderCountInput.value = cur + 1; updateCalculation(); generateLadder(); }
     });
-
     [meetingNameInput, totalAmountInput, memberCountInput, bankNameInput, accountNumberInput, accountHolderInput].forEach(el => {
       el.addEventListener('input', () => {
         if (el === memberCountInput) {
           const m = Number(memberCountInput.value);
-          if (Number.isInteger(m) && m >= 2 && m <= 10) {
-            ladderCountInput.value = m;
-            generateLadder();
-          }
+          if (Number.isInteger(m) && m >= 2 && m <= 10) { ladderCountInput.value = m; generateLadder(); }
         }
         updateCalculation();
       });
@@ -734,327 +245,150 @@
     btnCopy.addEventListener('click', async () => {
       const textToCopy = previewText.textContent;
       if (!textToCopy || previewText.style.display === 'none') return;
-
       try {
         await navigator.clipboard.writeText(textToCopy);
         btnCopy.textContent = '✅ 복사 완료! 카톡이나 문자에 붙여넣으세요!';
         btnCopy.classList.add('copied');
         copyNotice.textContent = '정산 내용과 계좌번호를 복사했습니다. 문자나 메신저에 붙여 넣어 공유하세요.';
-        setTimeout(() => {
-          btnCopy.textContent = '📋 정산 내용 + 계좌번호 복사하기';
-          btnCopy.classList.remove('copied');
-        }, 2000);
+        setTimeout(() => { btnCopy.textContent = '📋 정산 내용 + 계좌번호 복사하기'; btnCopy.classList.remove('copied'); }, 2000);
       } catch (err) {
-        const range = document.createRange();
-        range.selectNodeContents(previewText);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
         copyNotice.textContent = '자동 복사가 제한된 환경입니다. 선택된 문구를 복사(Ctrl+C)해 공유하세요.';
       }
     });
 
-    /* 사다리 로직 */
-    function getColX(col, count) {
-      const step = 600 / count;
-      return step * col + step / 2;
-    }
+    const getColX = (col, count) => (600 / count) * col + (600 / count) / 2;
 
     function generateLadder() {
       const rawCount = ladderCountInput.value.trim();
       const count = Number(rawCount);
-
       if (rawCount === '' || !Number.isInteger(count) || count < 2 || count > 10) {
         ladderError.textContent = '인원수는 2명에서 10명 사이로 설정해 주세요!';
-        ladderError.classList.add('show');
-        ladderStage.style.display = 'none';
-        winnerBanner.classList.remove('show');
-        return;
+        ladderError.classList.add('show'); ladderStage.style.display = 'none'; winnerBanner.classList.remove('show'); return;
       }
-
-      ladderError.classList.remove('show');
-      ladderStage.style.display = 'block';
-      winnerBanner.classList.remove('show');
-
-      const rows = 7;
-      const rungs = [];
+      ladderError.classList.remove('show'); ladderStage.style.display = 'block'; winnerBanner.classList.remove('show');
+      const rows = 7, rungs = [];
       for (let r = 0; r < rows; r++) {
         const rowRungs = Array(count - 1).fill(false);
         for (let c = 0; c < count - 1; c++) {
           if (c > 0 && rowRungs[c - 1]) continue;
-          if (Math.random() < 0.48) {
-            rowRungs[c] = true;
-          }
+          if (Math.random() < 0.48) rowRungs[c] = true;
         }
         rungs.push(rowRungs);
       }
-
-      // 각 세로줄 사이에 최소 1개 이상의 가로줄 보장
       for (let c = 0; c < count - 1; c++) {
-        const hasAny = rungs.some(row => row[c]);
-        if (!hasAny) {
+        if (!rungs.some(row => row[c])) {
           for (let r = 0; r < rows; r++) {
-            const leftUsed = c > 0 && rungs[r][c - 1];
-            const rightUsed = c < count - 2 && rungs[r][c + 1];
-            if (!leftUsed && !rightUsed) {
-              rungs[r][c] = true;
-              break;
-            }
+            if (!(c > 0 && rungs[r][c - 1]) && !(c < count - 2 && rungs[r][c + 1])) { rungs[r][c] = true; break; }
           }
         }
       }
-
       const winnerCol = Math.floor(Math.random() * count);
       const routes = [];
-
       for (let startCol = 0; startCol < count; startCol++) {
         let curCol = startCol;
         const points = [{ x: getColX(curCol, count), y: 10 }];
-
         for (let r = 0; r < rows; r++) {
           const y = 30 + r * 26;
           points.push({ x: getColX(curCol, count), y });
-          if (curCol < count - 1 && rungs[r][curCol]) {
-            curCol += 1;
-            points.push({ x: getColX(curCol, count), y });
-          } else if (curCol > 0 && rungs[r][curCol - 1]) {
-            curCol -= 1;
-            points.push({ x: getColX(curCol, count), y });
-          }
+          if (curCol < count - 1 && rungs[r][curCol]) { curCol += 1; points.push({ x: getColX(curCol, count), y }); }
+          else if (curCol > 0 && rungs[r][curCol - 1]) { curCol -= 1; points.push({ x: getColX(curCol, count), y }); }
         }
-
         points.push({ x: getColX(curCol, count), y: 230 });
         routes.push({ startCol, endCol: curCol, points });
       }
-
-      ladderState = {
-        count,
-        rungs,
-        winnerCol,
-        routes,
-        revealedStarts: new Set()
-      };
-
+      ladderState = { count, rungs, winnerCol, routes, revealedStarts: new Set() };
       renderLadderBase();
     }
 
     function renderLadderBase() {
       const { count, rungs, winnerCol } = ladderState;
-      startRow.innerHTML = '';
-      endRow.innerHTML = '';
-      ladderSvg.innerHTML = '';
-
+      startRow.innerHTML = ''; endRow.innerHTML = ''; ladderSvg.innerHTML = '';
       for (let c = 0; c < count; c++) {
         const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'start-btn';
-        btn.textContent = `${c + 1}번`;
+        btn.type = 'button'; btn.className = 'start-btn'; btn.textContent = `${c + 1}번`;
         btn.addEventListener('click', () => revealSingleRoute(c));
         startRow.appendChild(btn);
-
         const slot = document.createElement('div');
-        slot.className = 'end-slot';
-        slot.id = `end-slot-${c}`;
+        slot.className = 'end-slot'; slot.id = `end-slot-${c}`;
         slot.textContent = c === winnerCol ? '🎯 당첨!' : '통과';
         endRow.appendChild(slot);
       }
-
       const baseGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       for (let c = 0; c < count; c++) {
         const x = getColX(c, count);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x);
-        line.setAttribute('y1', 10);
-        line.setAttribute('x2', x);
-        line.setAttribute('y2', 230);
-        line.setAttribute('stroke', '#CED4DA');
-        line.setAttribute('stroke-width', '4');
-        line.setAttribute('stroke-linecap', 'round');
-        baseGroup.appendChild(line);
+        line.setAttribute('x1', x); line.setAttribute('y1', 10); line.setAttribute('x2', x); line.setAttribute('y2', 230);
+        line.setAttribute('stroke', '#CED4DA'); line.setAttribute('stroke-width', '4'); baseGroup.appendChild(line);
       }
-
       for (let r = 0; r < rungs.length; r++) {
         const y = 30 + r * 26;
         for (let c = 0; c < count - 1; c++) {
           if (rungs[r][c]) {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', getColX(c, count));
-            line.setAttribute('y1', y);
-            line.setAttribute('x2', getColX(c + 1, count));
-            line.setAttribute('y2', y);
-            line.setAttribute('stroke', '#CED4DA');
-            line.setAttribute('stroke-width', '4');
-            line.setAttribute('stroke-linecap', 'round');
-            baseGroup.appendChild(line);
+            line.setAttribute('x1', getColX(c, count)); line.setAttribute('y1', y); line.setAttribute('x2', getColX(c + 1, count)); line.setAttribute('y2', y);
+            line.setAttribute('stroke', '#CED4DA'); line.setAttribute('stroke-width', '4'); baseGroup.appendChild(line);
           }
         }
       }
-
       const pathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       pathGroup.id = 'activePaths';
-      ladderSvg.appendChild(baseGroup);
-      ladderSvg.appendChild(pathGroup);
+      ladderSvg.appendChild(baseGroup); ladderSvg.appendChild(pathGroup);
     }
 
-    function drawRoutePolyline(route, color, animate = true) {
+    function drawRoutePolyline(route, color) {
       const pathGroup = document.getElementById('activePaths');
       const existing = document.getElementById(`route-line-${route.startCol}`);
       if (existing) existing.remove();
-
       const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
       poly.id = `route-line-${route.startCol}`;
-      const pts = route.points.map(p => `${p.x},${p.y}`).join(' ');
-      poly.setAttribute('points', pts);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', color);
-      poly.setAttribute('stroke-width', '6');
-      poly.setAttribute('stroke-linecap', 'round');
-      poly.setAttribute('stroke-linejoin', 'round');
-
-      if (animate) {
-        let len = 0;
-        for (let i = 1; i < route.points.length; i++) {
-          const dx = route.points[i].x - route.points[i - 1].x;
-          const dy = route.points[i].y - route.points[i - 1].y;
-          len += Math.hypot(dx, dy);
-        }
-        poly.style.strokeDasharray = `${len}`;
-        poly.style.strokeDashoffset = `${len}`;
-        poly.style.transition = 'stroke-dashoffset 0.55s ease-in-out';
-        pathGroup.appendChild(poly);
-        requestAnimationFrame(() => {
-          poly.style.strokeDashoffset = '0';
-        });
-      } else {
-        pathGroup.appendChild(poly);
-      }
+      poly.setAttribute('points', route.points.map(p => `${p.x},${p.y}`).join(' '));
+      poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', color); poly.setAttribute('stroke-width', '6');
+      pathGroup.appendChild(poly);
     }
 
     function revealSingleRoute(startCol) {
       const route = ladderState.routes[startCol];
       if (!route) return;
-
-      const btns = startRow.querySelectorAll('.start-btn');
-      btns[startCol].classList.add('active');
-
-      const color = PATH_COLORS[startCol % PATH_COLORS.length];
-      drawRoutePolyline(route, color, true);
-      ladderState.revealedStarts.add(startCol);
-
-      setTimeout(() => {
-        const endSlot = document.getElementById(`end-slot-${route.endCol}`);
-        if (endSlot) {
-          if (route.endCol === ladderState.winnerCol) {
-            endSlot.classList.add('win');
-            showWinnerBanner(startCol + 1);
-          } else {
-            endSlot.classList.add('pass');
-          }
-        }
-      }, 520);
+      startRow.querySelectorAll('.start-btn')[startCol].classList.add('active');
+      drawRoutePolyline(route, PATH_COLORS[startCol % PATH_COLORS.length]);
+      const endSlot = document.getElementById(`end-slot-${route.endCol}`);
+      if (endSlot) {
+        if (route.endCol === ladderState.winnerCol) { endSlot.classList.add('win'); showWinnerBanner(startCol + 1); }
+        else endSlot.classList.add('pass');
+      }
     }
 
     function revealAllRoutes() {
       const btns = startRow.querySelectorAll('.start-btn');
       let winningStartNum = 1;
-
       ladderState.routes.forEach((route, idx) => {
         btns[idx].classList.add('active');
-        const color = PATH_COLORS[idx % PATH_COLORS.length];
-        drawRoutePolyline(route, color, false);
-
+        drawRoutePolyline(route, PATH_COLORS[idx % PATH_COLORS.length]);
         const endSlot = document.getElementById(`end-slot-${route.endCol}`);
-        if (route.endCol === ladderState.winnerCol) {
-          winningStartNum = idx + 1;
-          if (endSlot) endSlot.classList.add('win');
-        } else if (endSlot) {
-          endSlot.classList.add('pass');
-        }
+        if (route.endCol === ladderState.winnerCol) { winningStartNum = idx + 1; if (endSlot) endSlot.classList.add('win'); }
+        else if (endSlot) endSlot.classList.add('pass');
       });
-
       showWinnerBanner(winningStartNum);
     }
 
     function showWinnerBanner(winnerNum) {
       winnerBanner.textContent = `🎉 오늘의 당첨 번호는 ${winnerNum}번입니다!`;
-      winnerBanner.classList.remove('show');
-      void winnerBanner.offsetWidth;
       winnerBanner.classList.add('show');
-      launchConfetti();
-    }
-
-    function launchConfetti() {
-      const canvas = document.getElementById('confettiCanvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      const pieces = Array.from({ length: 45 }, () => ({
-        x: Math.random() * canvas.width,
-        y: -20 - Math.random() * 100,
-        size: 6 + Math.random() * 6,
-        color: PATH_COLORS[Math.floor(Math.random() * PATH_COLORS.length)],
-        vy: 3 + Math.random() * 4,
-        vx: -2 + Math.random() * 4,
-        angle: Math.random() * Math.PI * 2
-      }));
-
-      let frame = 0;
-      function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        pieces.forEach(p => {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.angle += 0.1;
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.fillStyle = p.color;
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-          ctx.restore();
-        });
-        frame++;
-        if (frame < 75) {
-          requestAnimationFrame(render);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-      }
-      render();
     }
 
     document.getElementById('btnLadderMinus').addEventListener('click', () => {
       const cur = Number(ladderCountInput.value) || 2;
-      if (cur > 2) {
-        ladderCountInput.value = cur - 1;
-        generateLadder();
-      }
+      if (cur > 2) { ladderCountInput.value = cur - 1; generateLadder(); }
     });
-
     document.getElementById('btnLadderPlus').addEventListener('click', () => {
       const cur = Number(ladderCountInput.value) || 2;
-      if (cur < 10) {
-        ladderCountInput.value = cur + 1;
-        generateLadder();
-      }
+      if (cur < 10) { ladderCountInput.value = cur + 1; generateLadder(); }
     });
-
-    ladderCountInput.addEventListener('input', () => {
-      generateLadder();
-    });
-
-    document.getElementById('btnNewLadder').addEventListener('click', () => {
-      generateLadder();
-    });
-
-    document.getElementById('btnRevealAll').addEventListener('click', () => {
-      revealAllRoutes();
-    });
-
-    // 초기 실행
+    ladderCountInput.addEventListener('input', generateLadder);
+    document.getElementById('btnNewLadder').addEventListener('click', generateLadder);
+    document.getElementById('btnRevealAll').addEventListener('click', revealAllRoutes);
     updateCalculation();
     generateLadder();
   </script>
 </body>
 </html>
-

@@ -1,542 +1,128 @@
 <!DOCTYPE html>
+<!--
+  =============================================================================
+  [문서 메타데이터 · 기획서 버전 · 검증자료 위치]
+  - 최종 HTML 파일: 더치페이.html (버전 라벨: v4.0 / 더치페이_v4.html 동일)
+  - 기획서 버전 및 위치: ./기획서.md (v4.0, 2026-11-10 최종 동기화)
+  - 검증자료 위치: ./제작검증기록.md (mission3/제작검증기록.md)
+  - 버전 이력: 더치페이_v1.html (v1.0) -> 더치페이_v2.html (v2.0) -> 더치페이_v3.html (v3.0) -> 더치페이_v4.html / 더치페이.html (v4.0)
+
+  [표준 양식 수정 기록 3건 요약 (상세 전문: ./제작검증기록.md)]
+  1. 수정 기록 1 (v1.0 -> v2.0):
+     - 발견한 문제(테스트·예상·실제): 화면 폭 360px에서 사다리 인원수 10명 실행 시(테스트), 1~10번이 한 화면에 보일 줄 알았으나(예상), 버튼 최소 너비(44px) 때문에 가로 스크롤(scrollWidth 494px > clientWidth 312px)이 생기고 9·10번이 잘림(실제).
+     - AI에게 전달한 요청: "화면 폭 360px에서 10명 사다리도 가로 스크롤 없이 한 화면에 들어오도록 인원수에 맞춰 번호 버튼과 도착 칸 너비가 자동 축소되게 고쳐 줘."
+     - 수정 후 테스트 결과: grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)) 적용 후 360px 10명에서 가로 스크롤 0px(312px/312px), 1~10번 정상 표시 및 50,000원÷3명 회귀 테스트 통과.
+     - 수정 이유: 모바일 환경에서 오른쪽 끝 번호가 잘리면 번호 선택과 경로 확인이 불편함.
+  2. 수정 기록 2 (v2.0 -> v3.0):
+     - 발견한 문제(테스트·예상·실제): 총금액 '초기화'(0원) 클릭 및 빈칸("") 입력 시(테스트), 오류 안내 문구가 나올 줄 알았으나(예상), '1인당 금액 0원'으로 계산되어 표시됨(실제).
+     - AI에게 전달한 요청: "총금액에 0원이나 빈칸을 넣으면 계산을 멈추고 '총금액을 1원 이상 입력해 주세요!' 안내 문구가 나오도록 고쳐 줘."
+     - 수정 후 테스트 결과: rawAmount === '' || isNaN(amount) || amount <= 0 조건 반영 후 0원·빈칸·음수 입력 5/5건 모두 안내 문구 출력 및 계산 상자 숨김 확인.
+     - 수정 이유: 금액 초기화 상태에서 실수로 0원 정산 문구를 복사·공유하는 문제를 방지함.
+  3. 수정 기록 3 (v3.0 -> v4.0, 사용자 피드백 반영):
+     - 발견한 문제(테스트·예상·실제): 동료(김OO)에게 50,000원÷3명 정산 및 자투리 사다리 당첨자를 뽑아 공유 문구를 복사해 달라고 요청했더니(테스트), 바로 복사할 줄 알았으나(예상), 아래쪽 사다리 결과를 본 뒤 복사 버튼을 찾느라 다시 화면 맨 위로 스크롤해 올라갔고 복사된 문구에 당첨 번호가 없자 "사다리 당첨 번호는 왜 같이 복사 안 돼요?"라고 질문함(실제).
+     - AI에게 전달한 요청: "사다리 당첨 번호가 공개되면 공유 문구 미리보기에 '• 🎯 내기 사다리 당첨: O번' 줄이 자동 추가되게 하고, 당첨 배너 바로 아래에도 '📋 당첨 번호 포함 정산 문구 복사하기' 버튼을 추가해 줘."
+     - 수정 후 테스트 결과: 사다리 당첨(예: 2번) 공개 시 배너 아래 복사 버튼이 즉시 표시되고, 복사 시 정산 금액·계좌·당첨 번호('• 🎯 내기 사다리 당첨: 2번')가 한 번에 복사됨(재스크롤 0px).
+     - 수정 이유: 상하 배치 구조에서 사다리 확인 후 다시 맨 위로 스크롤하거나 당첨 번호를 수동 입력해야 하는 번거로움을 없애기 위함.
+
+  [원본 유저 피드백(녹취/메시지) 및 반영 작업(누가·언제·무엇을) (상세: ./제작검증기록.md)]
+  - 원본 현장 녹취(2026-11-09 22:32, 참여자 김OO): "어? 방금 밑에서 사다리 타기로 2번이 당첨됐는데, 복사해서 붙여 넣은 정산 문구에는 사다리 당첨 번호가 안 들어가네요? 계산기에서 금액 맞추고 밑으로 내려와서 사다리까지 다 뽑았는데 복사 버튼이 위에만 있으니까 다시 맨 위로 스크롤해서 올라가는 게 좀 번거로워요. 사다리 당첨 결과 바로 밑에도 복사 버튼이 하나 더 있고, 거기서 복사하면 '내기 사다리 당첨: 2번'까지 같이 들어가면 훨씬 편할 것 같아요!"
+  - 원본 카톡 메시지: "+50,000원 버튼이랑 사다리 줄 따라가는 건 직관적이고 재밌어요! 근데 사다리 뽑고 나서 다시 위로 올라가서 복사 누르는 동선이 아쉬워요. 당첨 배너 바로 아래에 복사 버튼 넣어주고, 복사된 텍스트에 사다리 몇 번 당첨인지도 같이 찍히게 해주세요!"
+  - 반영 작업(누가·언제·무엇을): 개발자(SongYoungsim)가 2026-11-09 22:34(코드 v4.0) 및 2026-11-10(기획서 v4.0·제작검증기록.md)에 #previewText 당첨 번호 자동 삽입 및 #btnCopyWithLadder 하단 복사 버튼을 추가하고 재테스트 완료함.
+  =============================================================================
+-->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>더치페이 정산 &amp; 내기 사다리</title>
+  <meta name="version" content="v4.0 (더치페이.html / 더치페이_v4.html - 최종 제출본)">
+  <meta name="spec-version" content="기획서.md v4.0 (./기획서.md)">
+  <meta name="verification-record" content="./제작검증기록.md">
+  <title>더치페이 정산 &amp; 내기 사다리 (v4.0 최종)</title>
   <style>
-    :root {
-      --bg-color: #FFFDF7;
-      --card-bg: #FFFFFF;
-      --primary-coral: #FF6B6B;
-      --primary-yellow: #FFD166;
-      --primary-mint: #06D6A0;
-      --primary-blue: #118AB2;
-      --text-dark: #2B2D42;
-      --text-muted: #6C757D;
-      --border-color: #E9ECEF;
-      --shadow: 0 8px 24px rgba(43, 45, 66, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
-      background: linear-gradient(180deg, #FFF9E6 0%, #FFFDF7 100%);
-      color: var(--text-dark);
-      line-height: 1.5;
-      min-height: 100vh;
-      padding: 24px 16px 48px;
-    }
-
-    .container {
-      max-width: 680px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    header {
-      text-align: center;
-      padding: 16px 12px;
-      background: var(--card-bg);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      border: 2px solid var(--primary-yellow);
-    }
-
-    header h1 {
-      font-size: 1.65rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-bottom: 6px;
-      word-break: keep-all;
-    }
-
-    header p {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      word-break: keep-all;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 22px;
-      padding: 24px 20px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border-color);
-      position: relative;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 18px;
-      padding-bottom: 12px;
-      border-bottom: 2px dashed var(--border-color);
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .badge {
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #FFF3BF;
-      color: #D97706;
-    }
-
-    .form-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .form-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-row label {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    input[type="text"],
-    input[type="number"] {
-      width: 100%;
-      padding: 11px 14px;
-      font-size: 1rem;
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
-
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      border-color: var(--primary-coral);
-    }
-
-    .quick-btns {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-      flex-wrap: wrap;
-    }
-
-    .btn-chip {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      border-radius: 999px;
-      border: 1px solid #FFD8A8;
-      background: #FFF4E6;
-      color: #E8590C;
-      cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
-    }
-
-    .btn-chip:hover {
-      background: #FFE8CC;
-    }
-
-    .btn-chip:active {
-      transform: scale(0.96);
-    }
-
-    .btn-chip.reset {
-      background: #F1F3F5;
-      border-color: #DEE2E6;
-      color: #495057;
-    }
-
-    .stepper-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-step {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      border: 2px solid var(--border-color);
-      background: #F8F9FA;
-      font-size: 1.2rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-dark);
-      flex-shrink: 0;
-    }
-
-    .btn-step:hover {
-      border-color: var(--primary-coral);
-      color: var(--primary-coral);
-    }
-
-    .account-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.6fr 1fr;
-      gap: 8px;
-    }
-
-    @media (max-width: 520px) {
-      .account-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .error-msg {
-      display: none;
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #FFF5F5;
-      border: 1.5px solid #FFA8A8;
-      color: #C92A2A;
-      font-weight: 700;
-      font-size: 0.92rem;
-    }
-
-    .error-msg.show {
-      display: block;
-      animation: shake 0.35s ease-in-out;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-6px); }
-      50% { transform: translateX(6px); }
-      75% { transform: translateX(-4px); }
-    }
-
-    .result-box {
-      margin-top: 18px;
-      padding: 18px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #FFF9DB 0%, #FFF3BF 100%);
-      border: 2px solid var(--primary-yellow);
-      text-align: center;
-    }
-
-    .result-main {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      transition: transform 0.2s ease;
-    }
-
-    .result-main.pop {
-      transform: scale(1.06);
-    }
-
-    .result-main .highlight {
-      color: #E03131;
-      font-size: 1.65rem;
-    }
-
-    .result-sub {
-      margin-top: 4px;
-      font-size: 0.95rem;
-      color: #5C5F66;
-      font-weight: 600;
-    }
-
-    .speech-bubble {
-      position: relative;
-      margin-top: 18px;
-      background: #F8F9FA;
-      border: 2px solid #DEE2E6;
-      border-radius: 16px;
-      padding: 16px;
-      font-size: 0.92rem;
-      white-space: pre-line;
-      color: var(--text-dark);
-    }
-
-    .speech-bubble::before {
-      content: "💬 공유 문구 미리보기";
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: var(--primary-blue);
-      margin-bottom: 6px;
-    }
-
-    .btn-primary {
-      width: 100%;
-      margin-top: 14px;
-      padding: 14px 18px;
-      font-size: 1.02rem;
-      font-weight: 800;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      background: var(--primary-coral);
-      color: #FFFFFF;
-      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-      transition: background 0.2s, transform 0.1s;
-    }
-
-    .btn-primary:hover {
-      background: #FA5252;
-    }
-
-    .btn-primary:active {
-      transform: scale(0.99);
-    }
-
-    .btn-primary.copied {
-      background: var(--primary-mint);
-      color: #073B4C;
-      box-shadow: 0 4px 12px rgba(6, 214, 160, 0.3);
-    }
-
-    .copy-guide {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #099268;
-      font-weight: 700;
-      text-align: center;
-      min-height: 1.3em;
-    }
-
-    /* 사다리 영역 */
-    .ladder-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .ladder-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      width: 100%;
-    }
-
-    .btn-action {
-      flex: 1;
-      padding: 12px 14px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
-    }
-
-    .btn-action.generate {
-      background: var(--primary-blue);
-      color: #FFFFFF;
-    }
-
-    .btn-action.reveal-all {
-      background: var(--primary-yellow);
-      color: #2B2D42;
-    }
-
-    .ladder-hint {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 12px;
-    }
-
-    .ladder-stage {
-      background: #F8F9FA;
-      border: 2px solid var(--border-color);
-      border-radius: 16px;
-      padding: 14px 8px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .ladder-row {
-      display: grid;
-      grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
-      gap: 3px;
-      width: 100%;
-    }
-
-    .start-btn {
-      width: 100%;
-      min-width: 0;
-      padding: 7px 2px;
-      border-radius: 8px;
-      border: 2px solid #CED4DA;
-      background: #FFFFFF;
-      font-size: 0.82rem;
-      font-weight: 800;
-      cursor: pointer;
-      color: var(--text-dark);
-      transition: all 0.15s;
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    .start-btn:hover,
-    .start-btn.active {
-      border-color: var(--primary-coral);
-      background: #FFF0F0;
-      color: #E03131;
-      transform: translateY(-2px);
-    }
-
-    .canvas-wrap {
-      width: 100%;
-      height: 240px;
-      position: relative;
-      margin: 8px 0;
-    }
-
-    #ladderSvg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .end-slot {
-      width: 100%;
-      min-width: 0;
-      padding: 6px 2px;
-      border-radius: 8px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      text-align: center;
-      background: #E9ECEF;
-      color: #495057;
-      border: 2px solid transparent;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    @media (max-width: 420px) {
-      body {
-        padding: 16px 10px 36px;
-      }
-      .card {
-        padding: 18px 12px;
-      }
-      .start-btn {
-        font-size: 0.72rem;
-        padding: 6px 1px;
-        border-width: 1.5px;
-      }
-      .end-slot {
-        font-size: 0.68rem;
-        padding: 5px 1px;
-      }
-    }
-
-    .end-slot.win {
-      background: #FFE3E3;
-      color: #C92A2A;
-      border-color: #FF6B6B;
-    }
-
-    .end-slot.pass {
-      background: #E6FCF5;
-      color: #087F5B;
-      border-color: #63E6BE;
-    }
-
-    .winner-banner {
-      display: none;
-      margin-top: 16px;
-      padding: 16px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-      color: #FFFFFF;
-      text-align: center;
-      font-size: 1.25rem;
-      font-weight: 800;
-      box-shadow: 0 6px 18px rgba(255, 107, 107, 0.35);
-    }
-
-    .winner-banner.show {
-      display: block;
-      animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .ladder-copy-wrap {
-      display: none;
-      margin-top: 10px;
-    }
-
-    .ladder-copy-wrap.show {
-      display: block;
-    }
-
-    @keyframes bounceIn {
-      0% { transform: scale(0.7); opacity: 0; }
-      60% { transform: scale(1.06); opacity: 1; }
-      100% { transform: scale(1); }
-    }
-
-    #confettiCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
+    :root { --bg-color:#FFFDF7; --card-bg:#FFFFFF; --primary-coral:#FF6B6B; --primary-yellow:#FFD166; --primary-mint:#06D6A0; --primary-blue:#118AB2; --text-dark:#2B2D42; --text-muted:#6C757D; --border-color:#E9ECEF; --shadow:0 8px 24px rgba(43,45,66,0.08); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",system-ui,sans-serif; background:linear-gradient(180deg,#FFF9E6 0%,#FFFDF7 100%); color:var(--text-dark); line-height:1.5; min-height:100vh; padding:24px 16px 48px; }
+    .container { max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
+    header { text-align:center; padding:16px 12px; background:var(--card-bg); border-radius:20px; box-shadow:var(--shadow); border:2px solid var(--primary-yellow); }
+    header h1 { font-size:1.65rem; font-weight:800; color:var(--text-dark); margin-bottom:6px; word-break:keep-all; }
+    header p { font-size:0.95rem; color:var(--text-muted); word-break:keep-all; }
+    .meta-bar { margin-top:8px; font-size:0.78rem; color:#495057; background:#F8F9FA; display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid var(--border-color); }
+    .meta-bar a { color:var(--primary-blue); font-weight:700; text-decoration:underline; }
+    .card { background:var(--card-bg); border-radius:22px; padding:24px 20px; box-shadow:var(--shadow); border:1px solid var(--border-color); position:relative; }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-bottom:12px; border-bottom:2px dashed var(--border-color); }
+    .card-title { font-size:1.25rem; font-weight:800; display:flex; align-items:center; gap:8px; }
+    .badge { font-size:0.78rem; font-weight:700; padding:4px 10px; border-radius:999px; background:#FFF3BF; color:#D97706; }
+    .form-grid { display:flex; flex-direction:column; gap:14px; }
+    .form-row { display:flex; flex-direction:column; gap:6px; }
+    .form-row label { font-size:0.9rem; font-weight:700; color:var(--text-dark); }
+    input[type="text"], input[type="number"] { width:100%; padding:11px 14px; font-size:1rem; border:2px solid var(--border-color); border-radius:12px; outline:none; transition:border-color 0.2s; font-family:inherit; }
+    input[type="text"]:focus, input[type="number"]:focus { border-color:var(--primary-coral); }
+    .quick-btns { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+    .btn-chip { padding:6px 12px; font-size:0.85rem; font-weight:700; border-radius:999px; border:1px solid #FFD8A8; background:#FFF4E6; color:#E8590C; cursor:pointer; }
+    .btn-chip:hover { background:#FFE8CC; }
+    .btn-chip.reset { background:#F1F3F5; border-color:#DEE2E6; color:#495057; }
+    .stepper-wrap { display:flex; align-items:center; gap:8px; }
+    .btn-step { width:42px; height:42px; border-radius:12px; border:2px solid var(--border-color); background:#F8F9FA; font-size:1.2rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-dark); flex-shrink:0; }
+    .account-grid { display:grid; grid-template-columns:1fr 1.6fr 1fr; gap:8px; }
+    @media (max-width:520px) { .account-grid { grid-template-columns:1fr; } }
+    .error-msg { display:none; margin-top:12px; padding:12px 14px; border-radius:12px; background:#FFF5F5; border:1.5px solid #FFA8A8; color:#C92A2A; font-weight:700; font-size:0.92rem; }
+    .error-msg.show { display:block; animation:shake 0.35s ease-in-out; }
+    @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 50%{transform:translateX(6px);} 75%{transform:translateX(-4px);} }
+    .result-box { margin-top:18px; padding:18px; border-radius:16px; background:linear-gradient(135deg,#FFF9DB 0%,#FFF3BF 100%); border:2px solid var(--primary-yellow); text-align:center; }
+    .result-main { font-size:1.4rem; font-weight:800; color:var(--text-dark); transition:transform 0.2s ease; }
+    .result-main.pop { transform:scale(1.06); }
+    .result-main .highlight { color:#E03131; font-size:1.65rem; }
+    .result-sub { margin-top:4px; font-size:0.95rem; color:#5C5F66; font-weight:600; }
+    .speech-bubble { position:relative; margin-top:18px; background:#F8F9FA; border:2px solid #DEE2E6; border-radius:16px; padding:16px; font-size:0.92rem; white-space:pre-line; color:var(--text-dark); }
+    .speech-bubble::before { content:"💬 공유 문구 미리보기"; display:block; font-size:0.8rem; font-weight:800; color:var(--primary-blue); margin-bottom:6px; }
+    .btn-primary { width:100%; margin-top:14px; padding:14px 18px; font-size:1.02rem; font-weight:800; border:none; border-radius:14px; cursor:pointer; background:var(--primary-coral); color:#FFFFFF; box-shadow:0 4px 12px rgba(255,107,107,0.3); }
+    .btn-primary.copied { background:var(--primary-mint); color:#073B4C; }
+    .copy-guide { margin-top:8px; font-size:0.85rem; color:#099268; font-weight:700; text-align:center; min-height:1.3em; }
+    .ladder-controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .ladder-actions { display:flex; gap:8px; flex-wrap:wrap; width:100%; }
+    .btn-action { flex:1; padding:12px 14px; font-size:0.95rem; font-weight:800; border-radius:12px; border:none; cursor:pointer; }
+    .btn-action.generate { background:var(--primary-blue); color:#FFFFFF; }
+    .btn-action.reveal-all { background:var(--primary-yellow); color:#2B2D42; }
+    .ladder-hint { font-size:0.88rem; color:var(--text-muted); text-align:center; margin-bottom:12px; }
+    .ladder-stage { background:#F8F9FA; border:2px solid var(--border-color); border-radius:16px; padding:14px 8px; position:relative; overflow:hidden; }
+    .ladder-row { display:grid; grid-template-columns:repeat(var(--cols, 4), minmax(0, 1fr)); gap:3px; width:100%; }
+    .start-btn { width:100%; min-width:0; padding:7px 2px; border-radius:8px; border:2px solid #CED4DA; background:#FFFFFF; font-size:0.82rem; font-weight:800; cursor:pointer; color:var(--text-dark); white-space:nowrap; text-align:center; }
+    .start-btn:hover, .start-btn.active { border-color:var(--primary-coral); background:#FFF0F0; color:#E03131; }
+    .canvas-wrap { width:100%; height:240px; position:relative; margin:8px 0; }
+    #ladderSvg { width:100%; height:100%; display:block; }
+    .end-slot { width:100%; min-width:0; padding:6px 2px; border-radius:8px; font-size:0.78rem; font-weight:800; text-align:center; background:#E9ECEF; color:#495057; border:2px solid transparent; white-space:nowrap; overflow:hidden; }
+    @media (max-width:420px) { body{padding:16px 10px 36px;} .card{padding:18px 12px;} .start-btn{font-size:0.72rem;padding:6px 1px;border-width:1.5px;} .end-slot{font-size:0.68rem;padding:5px 1px;} }
+    .end-slot.win { background:#FFE3E3; color:#C92A2A; border-color:#FF6B6B; }
+    .end-slot.pass { background:#E6FCF5; color:#087F5B; border-color:#63E6BE; }
+    .winner-banner { display:none; margin-top:16px; padding:16px; border-radius:16px; background:linear-gradient(135deg,#FF6B6B 0%,#FF8E53 100%); color:#FFFFFF; text-align:center; font-size:1.25rem; font-weight:800; box-shadow:0 6px 18px rgba(255,107,107,0.35); }
+    .winner-banner.show { display:block; animation:bounceIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+    .ladder-copy-wrap { display:none; margin-top:10px; }
+    .ladder-copy-wrap.show { display:block; }
+    @keyframes bounceIn { 0%{transform:scale(0.7);opacity:0;} 60%{transform:scale(1.06);opacity:1;} 100%{transform:scale(1);} }
+    #confettiCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+    footer { text-align:center; font-size:0.82rem; color:var(--text-muted); margin-top:8px; }
   </style>
 </head>
 <body>
   <canvas id="confettiCanvas"></canvas>
-
   <div class="container">
     <header>
       <h1>💸 더치페이 정산 &amp; 내기 사다리 🎯</h1>
       <p>모임 정산 금액과 계좌번호를 한 번에 복사하고, 운명의 사다리로 오늘의 당첨자를 뽑아보세요!</p>
+      <div class="meta-bar">버전: <strong>v4.0 (최종 제출본)</strong> · 기획서: <a href="./기획서.md">기획서.md (v4.0)</a> · 검증기록: <a href="./제작검증기록.md">제작검증기록.md</a></div>
     </header>
 
     <!-- 위쪽: 1/N 똑같이 나누기 계산기 영역 -->
     <section class="card" aria-label="1/N 똑같이 나누기 계산기">
       <div class="card-header">
         <h2 class="card-title">🧮 1/N 똑같이 나누기 계산기</h2>
-        <span class="badge">원 단위 내림</span>
+        <span class="badge">원 단위 내림 · v4.0</span>
       </div>
-
       <div class="form-grid">
         <div class="form-row">
           <label for="meetingName">모임 이름</label>
           <input type="text" id="meetingName" value="금요일 저녁 모임 🍕" placeholder="예: 금요일 저녁 모임">
         </div>
-
         <div class="form-row">
           <label for="totalAmount">총금액 (원)</label>
           <input type="number" id="totalAmount" value="68000" placeholder="예: 68000">
@@ -546,7 +132,6 @@
             <button type="button" class="btn-chip reset" id="btnResetAmount">초기화</button>
           </div>
         </div>
-
         <div class="form-row">
           <label for="memberCount">참여 인원수 (2~10명)</label>
           <div class="stepper-wrap">
@@ -555,7 +140,6 @@
             <button type="button" class="btn-step" id="btnMemberPlus" aria-label="인원 증가">+</button>
           </div>
         </div>
-
         <div class="form-row">
           <label>입금받을 계좌 정보 (은행명 · 계좌번호 · 예금주)</label>
           <div class="account-grid">
@@ -565,20 +149,12 @@
           </div>
         </div>
       </div>
-
       <div id="calcError" class="error-msg" role="alert"></div>
-
       <div id="calcResultBox" class="result-box">
-        <div id="resultMain" class="result-main">
-          1인당 금액 <span id="perPersonText" class="highlight">17,000원</span>
-        </div>
-        <div id="resultSub" class="result-sub">
-          남는 자투리 금액 <strong id="remainderText">0원</strong>
-        </div>
+        <div id="resultMain" class="result-main">1인당 금액 <span id="perPersonText" class="highlight">17,000원</span></div>
+        <div id="resultSub" class="result-sub">남는 자투리 금액 <strong id="remainderText">0원</strong></div>
       </div>
-
       <div id="previewText" class="speech-bubble"></div>
-
       <button type="button" id="btnCopy" class="btn-primary">📋 정산 내용 + 계좌번호 복사하기</button>
       <div id="copyNotice" class="copy-guide" aria-live="polite"></div>
     </section>
@@ -589,9 +165,8 @@
         <h2 class="card-title">🪜 운명의 내기 사다리 타기</h2>
         <span class="badge">당첨자 1명 뽑기</span>
       </div>
-
       <div class="ladder-controls">
-        <div class="form-row" style="width: 100%;">
+        <div class="form-row" style="width:100%;">
           <label for="ladderCount">사다리 참여 인원수 (2~10명)</label>
           <div class="stepper-wrap">
             <button type="button" class="btn-step" id="btnLadderMinus" aria-label="사다리 인원 감소">-</button>
@@ -599,28 +174,21 @@
             <button type="button" class="btn-step" id="btnLadderPlus" aria-label="사다리 인원 증가">+</button>
           </div>
         </div>
-
         <div class="ladder-actions">
           <button type="button" class="btn-action generate" id="btnNewLadder">🎲 새 사다리 만들기</button>
           <button type="button" class="btn-action reveal-all" id="btnRevealAll">⚡ 전체 결과 한 번에 보기</button>
         </div>
       </div>
-
       <div id="ladderError" class="error-msg" role="alert"></div>
-
       <p class="ladder-hint">👆 위쪽 출발 번호(1번~N번)를 눌러 사다리 경로를 따라가 보세요!</p>
-
       <div id="ladderStage" class="ladder-stage">
         <div id="startRow" class="ladder-row"></div>
-        <div class="canvas-wrap">
-          <svg id="ladderSvg" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
-        </div>
+        <div class="canvas-wrap"><svg id="ladderSvg" viewBox="0 0 600 240" preserveAspectRatio="none"></svg></div>
         <div id="endRow" class="ladder-row"></div>
       </div>
-
       <div id="winnerBanner" class="winner-banner" role="status"></div>
 
-      <!-- 수정 기록 3 (사용자 피드백 반영): 사다리 결과 확인 후 위로 스크롤하지 않고도 당첨 번호가 포함된 정산 문구를 바로 복사할 수 있는 버튼 -->
+      <!-- 수정 기록 3 (사용자 피드백 반영 - ./제작검증기록.md 수록): 사다리 결과 확인 후 위로 스크롤하지 않고도 당첨 번호가 포함된 정산 문구를 바로 복사할 수 있는 버튼 -->
       <div id="ladderCopyWrap" class="ladder-copy-wrap">
         <button type="button" id="btnCopyWithLadder" class="btn-primary">📋 당첨 번호 포함 정산 문구 복사하기</button>
         <div id="ladderCopyNotice" class="copy-guide" aria-live="polite"></div>
@@ -628,23 +196,19 @@
     </section>
 
     <footer>
-      ※ 기본 입력된 계좌 정보(국민은행 123456-04-789012 홍길동)는 테스트용 가상 예시입니다. 입력한 정보는 저장되지 않습니다.
+      ※ 기본 입력된 계좌 정보(국민은행 123456-04-789012 홍길동)는 테스트용 가상 예시입니다. 입력한 정보는 저장되지 않습니다.<br>
+      기획서 버전: <a href="./기획서.md">기획서.md (v4.0)</a> | 최종 HTML: <strong>더치페이.html (v4.0)</strong> | 검증자료 위치: <a href="./제작검증기록.md">./제작검증기록.md</a>
     </footer>
   </div>
 
   <script>
-    const PATH_COLORS = [
-      '#FF6B6B', '#118AB2', '#06D6A0', '#F77F00', '#8338EC',
-      '#E63946', '#2A9D8F', '#FB8500', '#3A86FF', '#D62828'
-    ];
-
+    const PATH_COLORS = ['#FF6B6B','#118AB2','#06D6A0','#F77F00','#8338EC','#E63946','#2A9D8F','#FB8500','#3A86FF','#D62828'];
     const meetingNameInput = document.getElementById('meetingName');
     const totalAmountInput = document.getElementById('totalAmount');
     const memberCountInput = document.getElementById('memberCount');
     const bankNameInput = document.getElementById('bankName');
     const accountNumberInput = document.getElementById('accountNumber');
     const accountHolderInput = document.getElementById('accountHolder');
-
     const calcError = document.getElementById('calcError');
     const calcResultBox = document.getElementById('calcResultBox');
     const resultMain = document.getElementById('resultMain');
@@ -653,7 +217,6 @@
     const previewText = document.getElementById('previewText');
     const btnCopy = document.getElementById('btnCopy');
     const copyNotice = document.getElementById('copyNotice');
-
     const ladderCountInput = document.getElementById('ladderCount');
     const ladderError = document.getElementById('ladderError');
     const ladderStage = document.getElementById('ladderStage');
@@ -665,18 +228,8 @@
     const btnCopyWithLadder = document.getElementById('btnCopyWithLadder');
     const ladderCopyNotice = document.getElementById('ladderCopyNotice');
 
-    let ladderState = {
-      count: 4,
-      rungs: [],
-      winnerCol: 0,
-      routes: [],
-      revealedStarts: new Set(),
-      revealedWinnerNum: null
-    };
-
-    function formatNumber(num) {
-      return num.toLocaleString('ko-KR');
-    }
+    let ladderState = { count:4, rungs:[], winnerCol:0, routes:[], revealedStarts:new Set(), revealedWinnerNum:null };
+    const formatNumber = num => num.toLocaleString('ko-KR');
 
     function updateCalculation() {
       const rawAmount = totalAmountInput.value.trim();
@@ -686,93 +239,49 @@
 
       if (rawMembers === '' || !Number.isInteger(members) || members < 2 || members > 10) {
         calcError.textContent = '인원수는 2명에서 10명 사이로 설정해 주세요!';
-        calcError.classList.add('show');
-        calcResultBox.style.display = 'none';
-        previewText.style.display = 'none';
-        return;
+        calcError.classList.add('show'); calcResultBox.style.display = 'none'; previewText.style.display = 'none'; return;
       }
-
+      // 수정 기록 2 (v2.0 -> v3.0): 총금액 0원 이하 또는 빈칸 차단
       if (rawAmount === '' || isNaN(amount) || amount <= 0) {
         calcError.textContent = '총금액을 1원 이상 입력해 주세요!';
-        calcError.classList.add('show');
-        calcResultBox.style.display = 'none';
-        previewText.style.display = 'none';
-        return;
+        calcError.classList.add('show'); calcResultBox.style.display = 'none'; previewText.style.display = 'none'; return;
       }
 
-      calcError.classList.remove('show');
-      calcResultBox.style.display = 'block';
-      previewText.style.display = 'block';
-
+      calcError.classList.remove('show'); calcResultBox.style.display = 'block'; previewText.style.display = 'block';
       const perPerson = Math.floor(amount / members);
       const remainder = amount % members;
-
       perPersonText.textContent = `${formatNumber(perPerson)}원`;
       remainderText.textContent = `${formatNumber(remainder)}원`;
-
-      resultMain.classList.remove('pop');
-      void resultMain.offsetWidth;
-      resultMain.classList.add('pop');
+      resultMain.classList.remove('pop'); void resultMain.offsetWidth; resultMain.classList.add('pop');
 
       const meeting = meetingNameInput.value.trim() || '모임 정산';
       const bank = bankNameInput.value.trim() || '-';
       const accNo = accountNumberInput.value.trim() || '-';
       const holder = accountHolderInput.value.trim() || '-';
-
       const remainderLine = remainder > 0 ? `\n• 남는 자투리: ${formatNumber(remainder)}원` : '';
-      const winnerLine = ladderState.revealedWinnerNum
-        ? `\n• 🎯 내기 사다리 당첨: ${ladderState.revealedWinnerNum}번`
-        : '';
-
-      previewText.textContent =
-        `[${meeting} 정산 안내]\n` +
-        `• 총금액: ${formatNumber(amount)}원 (${members}명)\n` +
-        `• 1인당 입금 금액: ${formatNumber(perPerson)}원${remainderLine}${winnerLine}\n` +
-        `• 입금 계좌: ${bank} ${accNo} (예금주: ${holder})`;
+      // 수정 기록 3 (v3.0 -> v4.0, 사용자 김OO 피드백 반영): 사다리 당첨 번호 공개 시 공유 문구에 자동 추가
+      const winnerLine = ladderState.revealedWinnerNum ? `\n• 🎯 내기 사다리 당첨: ${ladderState.revealedWinnerNum}번` : '';
+      previewText.textContent = `[${meeting} 정산 안내]\n• 총금액: ${formatNumber(amount)}원 (${members}명)\n• 1인당 입금 금액: ${formatNumber(perPerson)}원${remainderLine}${winnerLine}\n• 입금 계좌: ${bank} ${accNo} (예금주: ${holder})`;
     }
 
-    document.querySelectorAll('.btn-chip[data-add]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const addVal = Number(btn.getAttribute('data-add'));
-        const cur = Number(totalAmountInput.value) || 0;
-        totalAmountInput.value = cur + addVal;
-        updateCalculation();
-      });
-    });
-
-    document.getElementById('btnResetAmount').addEventListener('click', () => {
-      totalAmountInput.value = 0;
+    document.querySelectorAll('.btn-chip[data-add]').forEach(btn => btn.addEventListener('click', () => {
+      totalAmountInput.value = (Number(totalAmountInput.value) || 0) + Number(btn.getAttribute('data-add'));
       updateCalculation();
-    });
-
+    }));
+    document.getElementById('btnResetAmount').addEventListener('click', () => { totalAmountInput.value = 0; updateCalculation(); });
     document.getElementById('btnMemberMinus').addEventListener('click', () => {
       const cur = Number(memberCountInput.value) || 2;
-      if (cur > 2) {
-        memberCountInput.value = cur - 1;
-        ladderCountInput.value = cur - 1;
-        updateCalculation();
-        generateLadder();
-      }
+      if (cur > 2) { memberCountInput.value = cur - 1; ladderCountInput.value = cur - 1; updateCalculation(); generateLadder(); }
     });
-
     document.getElementById('btnMemberPlus').addEventListener('click', () => {
       const cur = Number(memberCountInput.value) || 2;
-      if (cur < 10) {
-        memberCountInput.value = cur + 1;
-        ladderCountInput.value = cur + 1;
-        updateCalculation();
-        generateLadder();
-      }
+      if (cur < 10) { memberCountInput.value = cur + 1; ladderCountInput.value = cur + 1; updateCalculation(); generateLadder(); }
     });
-
     [meetingNameInput, totalAmountInput, memberCountInput, bankNameInput, accountNumberInput, accountHolderInput].forEach(el => {
       el.addEventListener('input', () => {
         if (el === memberCountInput) {
           const m = Number(memberCountInput.value);
-          if (Number.isInteger(m) && m >= 2 && m <= 10) {
-            ladderCountInput.value = m;
-            generateLadder();
-          }
+          if (Number.isInteger(m) && m >= 2 && m <= 10) { ladderCountInput.value = m; generateLadder(); }
         }
         updateCalculation();
       });
@@ -781,211 +290,125 @@
     async function copySettlementText(buttonEl, noticeEl, defaultLabel) {
       const textToCopy = previewText.textContent;
       if (!textToCopy || previewText.style.display === 'none') return;
-
       try {
         await navigator.clipboard.writeText(textToCopy);
         buttonEl.textContent = '✅ 복사 완료! 카톡이나 문자에 붙여넣으세요!';
         buttonEl.classList.add('copied');
         noticeEl.textContent = '정산 내용과 계좌번호를 복사했습니다. 문자나 메신저에 붙여 넣어 공유하세요.';
-        setTimeout(() => {
-          buttonEl.textContent = defaultLabel;
-          buttonEl.classList.remove('copied');
-        }, 2000);
+        setTimeout(() => { buttonEl.textContent = defaultLabel; buttonEl.classList.remove('copied'); }, 2000);
       } catch (err) {
-        const range = document.createRange();
-        range.selectNodeContents(previewText);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
+        const range = document.createRange(); range.selectNodeContents(previewText);
+        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
         noticeEl.textContent = '자동 복사가 제한된 환경입니다. 선택된 문구를 복사(Ctrl+C)해 공유하세요.';
       }
     }
 
-    btnCopy.addEventListener('click', () => {
-      copySettlementText(btnCopy, copyNotice, '📋 정산 내용 + 계좌번호 복사하기');
-    });
+    btnCopy.addEventListener('click', () => copySettlementText(btnCopy, copyNotice, '📋 정산 내용 + 계좌번호 복사하기'));
+    btnCopyWithLadder.addEventListener('click', () => copySettlementText(btnCopyWithLadder, ladderCopyNotice, '📋 당첨 번호 포함 정산 문구 복사하기'));
 
-    btnCopyWithLadder.addEventListener('click', () => {
-      copySettlementText(btnCopyWithLadder, ladderCopyNotice, '📋 당첨 번호 포함 정산 문구 복사하기');
-    });
-
-    /* 사다리 로직 */
-    function getColX(col, count) {
-      const step = 600 / count;
-      return step * col + step / 2;
-    }
+    const getColX = (col, count) => (600 / count) * col + (600 / count) / 2;
 
     function generateLadder() {
       const rawCount = ladderCountInput.value.trim();
       const count = Number(rawCount);
-
       if (rawCount === '' || !Number.isInteger(count) || count < 2 || count > 10) {
         ladderError.textContent = '인원수는 2명에서 10명 사이로 설정해 주세요!';
-        ladderError.classList.add('show');
-        ladderStage.style.display = 'none';
-        winnerBanner.classList.remove('show');
-        ladderCopyWrap.classList.remove('show');
-        return;
+        ladderError.classList.add('show'); ladderStage.style.display = 'none'; winnerBanner.classList.remove('show'); ladderCopyWrap.classList.remove('show'); return;
       }
-
-      ladderError.classList.remove('show');
-      ladderStage.style.display = 'block';
-      winnerBanner.classList.remove('show');
-      ladderCopyWrap.classList.remove('show');
-      ladderCopyNotice.textContent = '';
-
-      const rows = 7;
-      const rungs = [];
+      ladderError.classList.remove('show'); ladderStage.style.display = 'block'; winnerBanner.classList.remove('show'); ladderCopyWrap.classList.remove('show'); ladderCopyNotice.textContent = '';
+      const rows = 7, rungs = [];
       for (let r = 0; r < rows; r++) {
         const rowRungs = Array(count - 1).fill(false);
         for (let c = 0; c < count - 1; c++) {
           if (c > 0 && rowRungs[c - 1]) continue;
-          if (Math.random() < 0.48) {
-            rowRungs[c] = true;
-          }
+          if (Math.random() < 0.48) rowRungs[c] = true;
         }
         rungs.push(rowRungs);
       }
-
       for (let c = 0; c < count - 1; c++) {
-        const hasAny = rungs.some(row => row[c]);
-        if (!hasAny) {
+        if (!rungs.some(row => row[c])) {
           for (let r = 0; r < rows; r++) {
-            const leftUsed = c > 0 && rungs[r][c - 1];
-            const rightUsed = c < count - 2 && rungs[r][c + 1];
-            if (!leftUsed && !rightUsed) {
-              rungs[r][c] = true;
-              break;
-            }
+            if (!(c > 0 && rungs[r][c - 1]) && !(c < count - 2 && rungs[r][c + 1])) { rungs[r][c] = true; break; }
           }
         }
       }
-
       const winnerCol = Math.floor(Math.random() * count);
       const routes = [];
-
       for (let startCol = 0; startCol < count; startCol++) {
         let curCol = startCol;
         const points = [{ x: getColX(curCol, count), y: 10 }];
-
         for (let r = 0; r < rows; r++) {
           const y = 30 + r * 26;
           points.push({ x: getColX(curCol, count), y });
-          if (curCol < count - 1 && rungs[r][curCol]) {
-            curCol += 1;
-            points.push({ x: getColX(curCol, count), y });
-          } else if (curCol > 0 && rungs[r][curCol - 1]) {
-            curCol -= 1;
-            points.push({ x: getColX(curCol, count), y });
-          }
+          if (curCol < count - 1 && rungs[r][curCol]) { curCol += 1; points.push({ x: getColX(curCol, count), y }); }
+          else if (curCol > 0 && rungs[r][curCol - 1]) { curCol -= 1; points.push({ x: getColX(curCol, count), y }); }
         }
-
         points.push({ x: getColX(curCol, count), y: 230 });
         routes.push({ startCol, endCol: curCol, points });
       }
-
-      ladderState = {
-        count,
-        rungs,
-        winnerCol,
-        routes,
-        revealedStarts: new Set(),
-        revealedWinnerNum: null
-      };
-
+      ladderState = { count, rungs, winnerCol, routes, revealedStarts: new Set(), revealedWinnerNum: null };
       updateCalculation();
       renderLadderBase();
     }
 
     function renderLadderBase() {
       const { count, rungs, winnerCol } = ladderState;
+      // 수정 기록 1 (v1.0 -> v2.0): 인원수에 맞춰 그리드 열 수(--cols)를 동적 설정하여 360px 10명에서도 가로 넘침 0px 보장
       startRow.style.setProperty('--cols', count);
       endRow.style.setProperty('--cols', count);
-      startRow.innerHTML = '';
-      endRow.innerHTML = '';
-      ladderSvg.innerHTML = '';
-
+      startRow.innerHTML = ''; endRow.innerHTML = ''; ladderSvg.innerHTML = '';
       for (let c = 0; c < count; c++) {
         const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'start-btn';
-        btn.textContent = `${c + 1}번`;
+        btn.type = 'button'; btn.className = 'start-btn'; btn.textContent = `${c + 1}번`;
         btn.addEventListener('click', () => revealSingleRoute(c));
         startRow.appendChild(btn);
-
         const slot = document.createElement('div');
-        slot.className = 'end-slot';
-        slot.id = `end-slot-${c}`;
+        slot.className = 'end-slot'; slot.id = `end-slot-${c}`;
         slot.textContent = c === winnerCol ? (count >= 8 ? '🎯당첨' : '🎯 당첨!') : '통과';
         endRow.appendChild(slot);
       }
-
       const baseGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       for (let c = 0; c < count; c++) {
         const x = getColX(c, count);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x);
-        line.setAttribute('y1', 10);
-        line.setAttribute('x2', x);
-        line.setAttribute('y2', 230);
-        line.setAttribute('stroke', '#CED4DA');
-        line.setAttribute('stroke-width', '4');
-        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('x1', x); line.setAttribute('y1', 10); line.setAttribute('x2', x); line.setAttribute('y2', 230);
+        line.setAttribute('stroke', '#CED4DA'); line.setAttribute('stroke-width', '4'); line.setAttribute('stroke-linecap', 'round');
         baseGroup.appendChild(line);
       }
-
       for (let r = 0; r < rungs.length; r++) {
         const y = 30 + r * 26;
         for (let c = 0; c < count - 1; c++) {
           if (rungs[r][c]) {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', getColX(c, count));
-            line.setAttribute('y1', y);
-            line.setAttribute('x2', getColX(c + 1, count));
-            line.setAttribute('y2', y);
-            line.setAttribute('stroke', '#CED4DA');
-            line.setAttribute('stroke-width', '4');
-            line.setAttribute('stroke-linecap', 'round');
+            line.setAttribute('x1', getColX(c, count)); line.setAttribute('y1', y); line.setAttribute('x2', getColX(c + 1, count)); line.setAttribute('y2', y);
+            line.setAttribute('stroke', '#CED4DA'); line.setAttribute('stroke-width', '4'); line.setAttribute('stroke-linecap', 'round');
             baseGroup.appendChild(line);
           }
         }
       }
-
       const pathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       pathGroup.id = 'activePaths';
-      ladderSvg.appendChild(baseGroup);
-      ladderSvg.appendChild(pathGroup);
+      ladderSvg.appendChild(baseGroup); ladderSvg.appendChild(pathGroup);
     }
 
     function drawRoutePolyline(route, color, animate = true) {
       const pathGroup = document.getElementById('activePaths');
       const existing = document.getElementById(`route-line-${route.startCol}`);
       if (existing) existing.remove();
-
       const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
       poly.id = `route-line-${route.startCol}`;
-      const pts = route.points.map(p => `${p.x},${p.y}`).join(' ');
-      poly.setAttribute('points', pts);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', color);
-      poly.setAttribute('stroke-width', '6');
-      poly.setAttribute('stroke-linecap', 'round');
-      poly.setAttribute('stroke-linejoin', 'round');
-
+      poly.setAttribute('points', route.points.map(p => `${p.x},${p.y}`).join(' '));
+      poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', color); poly.setAttribute('stroke-width', '6');
+      poly.setAttribute('stroke-linecap', 'round'); poly.setAttribute('stroke-linejoin', 'round');
       if (animate) {
         let len = 0;
         for (let i = 1; i < route.points.length; i++) {
-          const dx = route.points[i].x - route.points[i - 1].x;
-          const dy = route.points[i].y - route.points[i - 1].y;
-          len += Math.hypot(dx, dy);
+          len += Math.hypot(route.points[i].x - route.points[i - 1].x, route.points[i].y - route.points[i - 1].y);
         }
-        poly.style.strokeDasharray = `${len}`;
-        poly.style.strokeDashoffset = `${len}`;
+        poly.style.strokeDasharray = `${len}`; poly.style.strokeDashoffset = `${len}`;
         poly.style.transition = 'stroke-dashoffset 0.55s ease-in-out';
         pathGroup.appendChild(poly);
-        requestAnimationFrame(() => {
-          poly.style.strokeDashoffset = '0';
-        });
+        requestAnimationFrame(() => { poly.style.strokeDashoffset = '0'; });
       } else {
         pathGroup.appendChild(poly);
       }
@@ -994,23 +417,14 @@
     function revealSingleRoute(startCol) {
       const route = ladderState.routes[startCol];
       if (!route) return;
-
-      const btns = startRow.querySelectorAll('.start-btn');
-      btns[startCol].classList.add('active');
-
-      const color = PATH_COLORS[startCol % PATH_COLORS.length];
-      drawRoutePolyline(route, color, true);
+      startRow.querySelectorAll('.start-btn')[startCol].classList.add('active');
+      drawRoutePolyline(route, PATH_COLORS[startCol % PATH_COLORS.length], true);
       ladderState.revealedStarts.add(startCol);
-
       setTimeout(() => {
         const endSlot = document.getElementById(`end-slot-${route.endCol}`);
         if (endSlot) {
-          if (route.endCol === ladderState.winnerCol) {
-            endSlot.classList.add('win');
-            showWinnerBanner(startCol + 1);
-          } else {
-            endSlot.classList.add('pass');
-          }
+          if (route.endCol === ladderState.winnerCol) { endSlot.classList.add('win'); showWinnerBanner(startCol + 1); }
+          else endSlot.classList.add('pass');
         }
       }, 520);
     }
@@ -1018,21 +432,13 @@
     function revealAllRoutes() {
       const btns = startRow.querySelectorAll('.start-btn');
       let winningStartNum = 1;
-
       ladderState.routes.forEach((route, idx) => {
         btns[idx].classList.add('active');
-        const color = PATH_COLORS[idx % PATH_COLORS.length];
-        drawRoutePolyline(route, color, false);
-
+        drawRoutePolyline(route, PATH_COLORS[idx % PATH_COLORS.length], false);
         const endSlot = document.getElementById(`end-slot-${route.endCol}`);
-        if (route.endCol === ladderState.winnerCol) {
-          winningStartNum = idx + 1;
-          if (endSlot) endSlot.classList.add('win');
-        } else if (endSlot) {
-          endSlot.classList.add('pass');
-        }
+        if (route.endCol === ladderState.winnerCol) { winningStartNum = idx + 1; if (endSlot) endSlot.classList.add('win'); }
+        else if (endSlot) endSlot.classList.add('pass');
       });
-
       showWinnerBanner(winningStartNum);
     }
 
@@ -1040,9 +446,7 @@
       ladderState.revealedWinnerNum = winnerNum;
       updateCalculation();
       winnerBanner.textContent = `🎉 오늘의 당첨 번호는 ${winnerNum}번입니다!`;
-      winnerBanner.classList.remove('show');
-      void winnerBanner.offsetWidth;
-      winnerBanner.classList.add('show');
+      winnerBanner.classList.remove('show'); void winnerBanner.offsetWidth; winnerBanner.classList.add('show');
       ladderCopyWrap.classList.add('show');
       launchConfetti();
     }
@@ -1050,75 +454,38 @@
     function launchConfetti() {
       const canvas = document.getElementById('confettiCanvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
       const pieces = Array.from({ length: 45 }, () => ({
-        x: Math.random() * canvas.width,
-        y: -20 - Math.random() * 100,
-        size: 6 + Math.random() * 6,
+        x: Math.random() * canvas.width, y: -20 - Math.random() * 100, size: 6 + Math.random() * 6,
         color: PATH_COLORS[Math.floor(Math.random() * PATH_COLORS.length)],
-        vy: 3 + Math.random() * 4,
-        vx: -2 + Math.random() * 4,
-        angle: Math.random() * Math.PI * 2
+        vy: 3 + Math.random() * 4, vx: -2 + Math.random() * 4, angle: Math.random() * Math.PI * 2
       }));
-
       let frame = 0;
-      function render() {
+      (function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         pieces.forEach(p => {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.angle += 0.1;
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.fillStyle = p.color;
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-          ctx.restore();
+          p.x += p.vx; p.y += p.vy; p.angle += 0.1;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle); ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
         });
-        frame++;
-        if (frame < 75) {
-          requestAnimationFrame(render);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-      }
-      render();
+        if (++frame < 75) requestAnimationFrame(render);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      })();
     }
 
     document.getElementById('btnLadderMinus').addEventListener('click', () => {
       const cur = Number(ladderCountInput.value) || 2;
-      if (cur > 2) {
-        ladderCountInput.value = cur - 1;
-        generateLadder();
-      }
+      if (cur > 2) { ladderCountInput.value = cur - 1; generateLadder(); }
     });
-
     document.getElementById('btnLadderPlus').addEventListener('click', () => {
       const cur = Number(ladderCountInput.value) || 2;
-      if (cur < 10) {
-        ladderCountInput.value = cur + 1;
-        generateLadder();
-      }
+      if (cur < 10) { ladderCountInput.value = cur + 1; generateLadder(); }
     });
-
-    ladderCountInput.addEventListener('input', () => {
-      generateLadder();
-    });
-
-    document.getElementById('btnNewLadder').addEventListener('click', () => {
-      generateLadder();
-    });
-
-    document.getElementById('btnRevealAll').addEventListener('click', () => {
-      revealAllRoutes();
-    });
-
-    // 초기 실행
+    ladderCountInput.addEventListener('input', generateLadder);
+    document.getElementById('btnNewLadder').addEventListener('click', generateLadder);
+    document.getElementById('btnRevealAll').addEventListener('click', revealAllRoutes);
     updateCalculation();
     generateLadder();
   </script>
 </body>
 </html>
-
